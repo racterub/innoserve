@@ -10,10 +10,13 @@
 # import time
 import re
 from urllib.parse import urlparse
+import json
+from bs4 import BeautifulSoup as BS
+import time
 
 # Flask
 from flask import Flask, request
-import json
+
 
 # Selenium
 from selenium import webdriver
@@ -26,13 +29,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 GA_LIST = [
     'UA-138308314-1',
 ]
+FB_LIST = [
+    '799174287180703',
+]
 STATIC_LIST = [
     'www.benbdsuper.online',
 ]
 
 
 # Identified scam sites
-def search_static(parsed):
+def checkStatic(parsed):
     domain = parsed.netloc
 
     # MySQL or MongoDB?
@@ -41,8 +47,8 @@ def search_static(parsed):
     return False
 
 
-# GA
-def check_GA(url):
+# Google Analytics & Facebook Pixel
+def checkAnalytics(url):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     prefs = {'profile.default_content_setting_values': {'notifications': 2}}
@@ -50,20 +56,26 @@ def check_GA(url):
     browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
     # browser.set_window_size(1024, 960)
     browser.get(url)
-    m = re.search("UA-[0-9]{9}-[0-9]", browser.page_source)
+    source = browser.page_source
     browser.quit()
-    found = m.group(0)
+    GA = re.search("UA-[0-9]{9}-[0-9]", source)
+    soup = BS(source, "lxml")
+    FB = soup.find("meta", property="fb:app_id")
+    foundGA = GA.group(0)
 
     # MySQL or MongoDB?
-    if (found in GA_LIST):
+    if (foundGA in GA_LIST):
         return True
+    if (FB):
+        if (FB['content'] in FB_LIST):
+            return True
     return False
 
 
-def check_post(url):
+def checkPost(url):
     parsed_url = urlparse(url)
-    return search_static(parsed_url)
-    # return check_GA(url)
+    return checkStatic(parsed_url)
+    return checkAnalytics(url)
     # return check_archive(url)
 
 
@@ -82,8 +94,8 @@ def index():
             return json.dumps({"status": "false"})
 
         else:
-            status = check_post(url)
-            return json.dumps({"status": status, "via": "ga"})
+            status = checkPost(url)
+            return json.dumps({"status": status})
 
 
 if __name__ == "__main__":
