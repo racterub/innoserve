@@ -20,8 +20,6 @@ import re
 from urllib.parse import urlparse
 import json
 from bs4 import BeautifulSoup as BS
-import time
-import requests
 
 # Flask
 from flask import Flask, request
@@ -29,9 +27,6 @@ from flask import Flask, request
 
 # Selenium
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
 
 # For Demo Purpose
@@ -46,6 +41,23 @@ STATIC_LIST = [
 ]
 FBUSER_LIST = [
 ]
+
+
+# MonthMap
+MONTHMAP = {
+    "January": 1,
+    "February": 2,
+    "March": 3,
+    "April": 4,
+    "May": 5,
+    "June": 6,
+    "July": 7,
+    "August": 8,
+    "September": 9,
+    "October": 10,
+    "November": 11,
+    "December": 12
+}
 
 
 # Identified scam sites
@@ -102,10 +114,36 @@ def checkFBCreate(url):
     browser.quit()
     soup = BS(source, "lxml")
 
-    dateDivBlock = soup.find("div", class_="_3qn7 _61-0 _2fyi _3qnf _2pi9 _3-95")
-    date = dateDivBlock.find("span").string
-    print(date)
+    # Facebook Sucks :(
+    try:
+        '''
+        Old Facebook UI
+        '''
+        dateDivBlock = soup.find("div", class_="_3qn7 _61-0 _2fyi _3qnf _2pi9 _3-95")
+        date = dateDivBlock.find("span").string
+    except AttributeError:
+        '''
+        New Facebook UI
+        '''
+        dateDivBlock = soup.find("div", class_="d2edcug0 hpfvmrgz qv66sw1b c1et5uql oi732d6d ik7dh3pa fgxwclzu a8c37x1j keod5gw0 nxhoafnm aigsh9s9 d9wwppkn fe6kdd0r mau55g9w c8b282yb iv3no6db jq4qci2q a3bd9o3v lrazzd5p oo9gr5id")
+        date = dateDivBlock.find("span").string
 
+    # Languages
+    if date[0] == "粉":
+        date = date[11:].split('年')
+        year = date[0]
+        date = date[1].split('月')
+        month = date[0]
+        date = date.split('日')
+        day = date[0]
+    else:
+        date = date[15:].split(' ')
+        month = date[0]
+        date = ''.join(date[1:]).split(',')
+        day, year = date
+        month = MONTHMAP[month]
+
+    return year, month, day
 
 def checkPost(url):
     if (checkStatic(urlparse(url))):  # Make it faster

@@ -3,3 +3,4 @@ chromedriver
 fb/
 cred*
 log*
+*.lock
