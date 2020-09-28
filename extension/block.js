@@ -11,10 +11,16 @@ window.addEventListener('load', () => {
           item.style.pointerEvents = "none";
         });
         let btn = document.createElement("BUTTON");
-        btn.innerText = 'OK';
+        btn.innerText = '我明白此篇貼文具有風險';
+        btn.style.border = '2px solid black';
+        btn.style.borderRadius = '1rem';
+        btn.style.background = 'gray';
+        btn.style.color='white';
         btn.style.position = 'absolute';
-        btn.style.top = '50%';
-        btn.style.left = '50%';
+        btn.style.top = 'calc(50% - 1rem)';
+        btn.style.left = 'calc(50% - 6rem)';
+        btn.style.fontSize = '1rem';
+        btn.style.padding = "0 0.5rem";
         btn.onclick = () => {
           content.style.filter = '';
           btn.style.display = 'none';
