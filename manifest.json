@@ -12,7 +12,7 @@
         "128": "yzu128.png"
     },
     "content_scripts": [{
-        "matches": ["https://*/*"],
+        "matches": ["https://www.facebook.com/*"],
         "js": ["block.js"]
     }],
     "background": {
