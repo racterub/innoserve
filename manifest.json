@@ -1,0 +1,24 @@
+{
+    "name": "我就怕被騙阿",
+    "description": "xxxx",
+    "version": "1.0",
+    "manifest_version": 2,
+    "browser_action": {
+        "default_icon": "yzu.png"
+    },
+    "icons": {
+        "16": "yzu16.png",
+        "48": "yzu48.png",
+        "128": "yzu128.png"
+    },
+    "content_scripts": [{
+        "matches": ["https://*/*"],
+        "js": ["block.js"]
+    }],
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    },
+    "permissions": [
+    ]
+}
