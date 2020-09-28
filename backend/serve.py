@@ -105,13 +105,14 @@ def checkFBUser(url):
 # String offset depends on facebook's language
 def checkFBCreate(url):
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
     prefs = {'profile.default_content_setting_values': {'notifications': 2}}
     options.add_experimental_option('prefs', prefs)
     browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
+    browser.set_window_size(1024, 768)
     browser.get(url)
     source = browser.page_source
-    browser.quit()
+    # browser.quit()
     soup = BS(source, "lxml")
 
     # Facebook Sucks :(
@@ -134,7 +135,7 @@ def checkFBCreate(url):
         year = date[0]
         date = date[1].split('月')
         month = date[0]
-        date = date.split('日')
+        date = date[1].split('日')
         day = date[0]
     else:
         date = date[15:].split(' ')
@@ -143,12 +144,15 @@ def checkFBCreate(url):
         day, year = date
         month = MONTHMAP[month]
 
-    return year, month, day
+    return False
 
-def checkPost(url):
-    if (checkStatic(urlparse(url))):  # Make it faster
+
+def checkPost(fburl, url):
+    print("simple check")
+    if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
         return True
-    if (checkAnalytics(url)):
+    print("adv check")
+    if (checkAnalytics(url) or checkFBCreate(fburl)):
         return True
     return False
 
@@ -163,19 +167,19 @@ def index():
     if request.method == "GET":
         return "scamblock app"
     else:
-        # payload = request.form.get('payload')
-        # try:
-        #     exPayload = json.loads(payload)
-        # except JSONDecodeError:
-        #     return json.dumps({"status": "false"})
-        # fbUrl = exPayload['fbUrl']
-        # storeUrl = exPayload['storeUrl']
-
-        url = request.form.get('url')
-        if not url:
+        payload = request.form.get('payload')
+        try:
+            exPayload = json.loads(payload)
+            fbUrl = exPayload['fbUrl']
+            storeUrl = exPayload['storeUrl']
+        except:
+            print("error")
+            return json.dumps({"status": "false"})
+        if (not fbUrl or not storeUrl):
+            print("hello")
             return json.dumps({"status": "false"})
         else:
-            status = checkPost(url)
+            status = checkPost(fbUrl, storeUrl)
             return json.dumps({"status": status})
 
 
