@@ -6,6 +6,14 @@
 # @License : MIT
 
 
+'''
+[-] check domain list
+[-] check analytics
+[] check fb profile (username)
+[] check fb profile (creation date)
+'''
+
+
 # Misc
 # import time
 import re
@@ -13,6 +21,7 @@ from urllib.parse import urlparse
 import json
 from bs4 import BeautifulSoup as BS
 import time
+import requests
 
 # Flask
 from flask import Flask, request
@@ -35,6 +44,8 @@ FB_LIST = [
 STATIC_LIST = [
     'www.benbdsuper.online',
 ]
+FBUSER_LIST = [
+]
 
 
 # Identified scam sites
@@ -54,34 +65,59 @@ def checkAnalytics(url):
     prefs = {'profile.default_content_setting_values': {'notifications': 2}}
     options.add_experimental_option('prefs', prefs)
     browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
-    # browser.set_window_size(1024, 960)
     browser.get(url)
     source = browser.page_source
     browser.quit()
     GA = re.search("UA-[0-9]{9}-[0-9]", source)
     soup = BS(source, "lxml")
     FB = soup.find("meta", property="fb:app_id")
-    foundGA = GA.group(0)
 
     # MySQL or MongoDB?
-    if (foundGA in GA_LIST):
-        return True
+    if (GA):
+        if (GA.group() in GA_LIST):
+            return True
     if (FB):
         if (FB['content'] in FB_LIST):
             return True
     return False
 
 
+def checkFBUser(url):
+    parsedUrl = urlparse(url)
+    userId = parsedUrl.path[1:-1]
+    if (userId in FBUSER_LIST):
+        return True
+    return False
+
+
+# String offset depends on facebook's language
+def checkFBCreate(url):
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    prefs = {'profile.default_content_setting_values': {'notifications': 2}}
+    options.add_experimental_option('prefs', prefs)
+    browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
+    browser.get(url)
+    source = browser.page_source
+    browser.quit()
+    soup = BS(source, "lxml")
+
+    dateDivBlock = soup.find("div", class_="_3qn7 _61-0 _2fyi _3qnf _2pi9 _3-95")
+    date = dateDivBlock.find("span").string
+    print(date)
+
+
 def checkPost(url):
-    parsed_url = urlparse(url)
-    return checkStatic(parsed_url)
-    return checkAnalytics(url)
-    # return check_archive(url)
+    if (checkStatic(urlparse(url))):  # Make it faster
+        return True
+    if (checkAnalytics(url)):
+        return True
+    return False
 
 
 # Flask app
 app = Flask(__name__)
-app.config.from_object("config")  # For security, use envvar instead.
+app.config.from_object("config")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -89,10 +125,17 @@ def index():
     if request.method == "GET":
         return "scamblock app"
     else:
+        # payload = request.form.get('payload')
+        # try:
+        #     exPayload = json.loads(payload)
+        # except JSONDecodeError:
+        #     return json.dumps({"status": "false"})
+        # fbUrl = exPayload['fbUrl']
+        # storeUrl = exPayload['storeUrl']
+
         url = request.form.get('url')
         if not url:
             return json.dumps({"status": "false"})
-
         else:
             status = checkPost(url)
             return json.dumps({"status": status})
