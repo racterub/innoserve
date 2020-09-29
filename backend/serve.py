@@ -13,6 +13,16 @@
 [] check fb profile (creation date)
 '''
 
+'''
+API
+
+Endpoint: /
+Method: POST
+Data:
+    - payload (urlencoded-json format)
+        - storeUrl # External Link
+        - fbUrl # Facebook Profile
+'''
 
 # Misc
 # import time
