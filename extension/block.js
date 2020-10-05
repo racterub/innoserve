@@ -25,14 +25,31 @@ window.addEventListener('load', () => {
       btn.style.left = 'calc(50% - 6rem)';
       btn.style.fontSize = '1rem';
       btn.style.padding = "0 0.5rem";
-      btn.onclick = () => {
+      const unblock = () => {
         content.style.filter = '';
         btn.style.display = 'none';
         toBeBlocked.forEach((item) => {
           item.style.pointerEvents = "auto";
         });
       };
+      btn.onclick = unblock;
       li.appendChild(btn);
+
+      const as = content.querySelectorAll(`[role='link']`);
+      const urls = [...as].map(e => e.href);
+      const [fbUrl, storeUrl] = [urls[0], urls[3]];
+      console.log({ as, urls, fbUrl, storeUrl })
+
+      fetch('https://inno.racterub.me/', {
+        body: JSON.stringify({ fbUrl, storeUrl }),
+        method: "POST",
+        headers: { "Content-Type": "www-form-urlencoded" },
+        mode: "no-cors",
+      }).then((response) => {
+        return response.text().then(function (text) {
+          return text ? JSON.parse(text) : { text };
+        })
+      }).then(console.log);
     });
   }
 
@@ -57,6 +74,13 @@ window.addEventListener('load', () => {
 
   // Start observing the target node for configured mutations
   observer.observe(targetNode, config);
+
+  const outerObs = new MutationObserver((mutationsList, observer) => {
+    console.log('REFRASH!!', mutationsList);
+    observer.disconnect();
+    observer.observe(document.querySelector(`[role='feed']`), config);
+  });
+  outerObs.observe(targetNode.parentNode, { childList: true });
 
   block([...targetNode.querySelectorAll(`[data-pagelet]`)])
 });
