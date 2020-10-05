@@ -158,12 +158,17 @@ def checkFBCreate(url):
 
 
 def checkPost(fburl, url):
-    print("simple check")
-    if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
-        return True
-    print("adv check")
-    if (checkAnalytics(url) or checkFBCreate(fburl)):
-        return True
+
+    if (url):
+        if (checkFBUser(fburl)):
+            return True
+        if (checkFBCreate(fburl)):
+            return True
+    else:
+        if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
+            return True
+        if (checkAnalytics(url) or checkFBCreate(fburl)):
+            return True
     return False
 
 
@@ -183,11 +188,10 @@ def index():
             fbUrl = exPayload['fbUrl']
             storeUrl = exPayload['storeUrl']
         except:
-            print("error")
             return json.dumps({"status": "false"})
-        if (not fbUrl or not storeUrl):
-            print("hello")
-            return json.dumps({"status": "false"})
+        if (not fbUrl):
+            status = checkPost(fbUrl, storeUrl)
+            return json.dumps({"status": status})
         else:
             status = checkPost(fbUrl, storeUrl)
             return json.dumps({"status": status})
