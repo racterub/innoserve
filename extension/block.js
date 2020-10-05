@@ -38,10 +38,12 @@ window.addEventListener('load', () => {
       const as = content.querySelectorAll(`[role='link']`);
       const urls = [...as].map(e => e.href);
       const [fbUrl, storeUrl] = [urls[0], urls[3]];
-      console.log({ as, urls, fbUrl, storeUrl })
+      console.log({ as, urls, fbUrl, storeUrl });
+      const formData = new FormData();
+      formData.append('payload', JSON.stringify({ fbUrl, storeUrl }));
 
       fetch('https://inno.racterub.me/', {
-        body: JSON.stringify({ fbUrl, storeUrl }),
+        body: formData,
         method: "POST",
         headers: { "Content-Type": "www-form-urlencoded" },
         mode: "no-cors",
