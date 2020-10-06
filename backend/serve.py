@@ -31,8 +31,10 @@ from urllib.parse import urlparse
 import json
 from bs4 import BeautifulSoup as BS
 
+
 # Flask
-from flask import Flask, request
+from flask import Flask, request, Response
+from flask_cors import CORS
 
 
 # Selenium
@@ -84,6 +86,8 @@ def checkStatic(parsed):
 def checkAnalytics(url):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
     prefs = {'profile.default_content_setting_values': {'notifications': 2}}
     options.add_experimental_option('prefs', prefs)
     browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
@@ -115,11 +119,13 @@ def checkFBUser(url):
 # String offset depends on facebook's language
 def checkFBCreate(url):
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
     prefs = {'profile.default_content_setting_values': {'notifications': 2}}
     options.add_experimental_option('prefs', prefs)
     browser = webdriver.Chrome(options=options, executable_path='./chromedriver')
-    browser.set_window_size(1024, 768)
+    #browser.set_window_size(1024, 768)
     browser.get(url)
     source = browser.page_source
     # browser.quit()
@@ -158,12 +164,17 @@ def checkFBCreate(url):
 
 
 def checkPost(fburl, url):
-    print("simple check")
-    if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
-        return True
-    print("adv check")
-    if (checkAnalytics(url) or checkFBCreate(fburl)):
-        return True
+
+    if (not url):
+        if (checkFBUser(fburl)):
+            return True
+        #if (checkFBCreate(fburl)):
+            return True
+    else:
+        if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
+            return True
+        #if (checkAnalytics(url) or checkFBCreate(fburl)):
+            #return True
     return False
 
 
@@ -171,27 +182,36 @@ def checkPost(fburl, url):
 app = Flask(__name__)
 app.config.from_object("config")
 
+CORS(app)
+"""
+def after_request(resp):
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return resp
+app.after_request(after_request)
+"""
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    print('===')
     if request.method == "GET":
         return "scamblock app"
     else:
-        payload = request.form.get('payload')
-        try:
-            exPayload = json.loads(payload)
-            fbUrl = exPayload['fbUrl']
-            storeUrl = exPayload['storeUrl']
-        except:
-            print("error")
-            return json.dumps({"status": "false"})
-        if (not fbUrl or not storeUrl):
-            print("hello")
-            return json.dumps({"status": "false"})
+        payload = request.get_json()
+        print(payload)
+        if ('fbUrl' in payload):
+            fbUrl = payload['fbUrl']
         else:
-            status = checkPost(fbUrl, storeUrl)
-            return json.dumps({"status": status})
+            return json.dumps({"status": "false"})
+        if ('storeUrl' in payload):
+            storeUrl = payload['storeUrl']
+        else:
+            storeUrl = None
+        status = checkPost(fbUrl, storeUrl)
+        resp = Response(json.dumps({"status": status}), mimetype='application/json')
+        return resp
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="127.0.0.1", port=6000)
