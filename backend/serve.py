@@ -165,16 +165,21 @@ def checkFBCreate(url):
 
 def checkPost(fburl, url):
 
+
     if (not url):
         if (checkFBUser(fburl)):
             return True
         #if (checkFBCreate(fburl)):
+
+
             return True
     else:
         if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
             return True
+
         #if (checkAnalytics(url) or checkFBCreate(fburl)):
             #return True
+
     return False
 
 
@@ -198,6 +203,7 @@ def index():
     if request.method == "GET":
         return "scamblock app"
     else:
+
         payload = request.get_json()
         print(payload)
         if ('fbUrl' in payload):
@@ -206,6 +212,7 @@ def index():
             return json.dumps({"status": "false"})
         if ('storeUrl' in payload):
             storeUrl = payload['storeUrl']
+
         else:
             storeUrl = None
         status = checkPost(fbUrl, storeUrl)
