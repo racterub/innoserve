@@ -1,5 +1,6 @@
 window.addEventListener('load', () => {
   const DEBUG = true;
+  const script = {};
 
   function hasLabel(elem, labels) {
     return labels.some(tag => elem.querySelector(`[aria-label=${tag}]`));
@@ -11,7 +12,9 @@ window.addEventListener('load', () => {
       li = li.querySelector(`[role='article']`);
       while (li.children.length !== 2) li = li.children[0];
       const content = li.children[1];
+      const originalHeight = content.clientHeight;
       content.style.filter = `blur(8px)`;
+      content.style.height = "100px";
       const toBeBlocked = content.querySelectorAll('video, a, div, span, image');
       toBeBlocked.forEach((item) => {
         item.style.pointerEvents = "none";
@@ -29,6 +32,7 @@ window.addEventListener('load', () => {
       btn.style.padding = "0 0.5rem";
       const unblock = () => {
         content.style.filter = '';
+        script.gsap.to(content, { height: `${originalHeight}px`, duration: 0.6, onComplete: () => { content.style.height = "" } });
         btn.style.display = 'none';
         toBeBlocked.forEach((item) => {
           item.style.pointerEvents = "auto";
@@ -54,13 +58,13 @@ window.addEventListener('load', () => {
         
         const { status } = JSON.parse(text);
         if (status) return;
-        unblock();
+        // unblock();
       });
     });
   }
 
   // Select the node that will be observed for mutations
-  const targetNode = document.querySelector(`[role='feed']`);
+  let targetNode = document.querySelector(`[role='feed']`);
   const parentNode = targetNode.parentNode;
 
   // Options for the observer (which mutations to observe)
@@ -88,16 +92,20 @@ window.addEventListener('load', () => {
   let observer = observe(targetNode);
   block([...targetNode.querySelectorAll(`[data-pagelet]`)])
 
-  const outerObs = new MutationObserver((mutationsList, observer) => {
-    if (mutationsList[0].target !== parentNode) return;
-    
-    if (DEBUG) console.log('REFRASH!!', { mutationsList })
-    observer.disconnect();
-    const targetNode = document.querySelector(`[role='feed']`);
-    observer = observe(targetNode);
-    block([...targetNode.querySelectorAll(`[data-pagelet]`)])
-    if (DEBUG) console.log({ targetNode });
-  });
-  outerObs.observe(parentNode, { childList: true });
+  fetch('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.5.1/gsap.min.js')
+    .then((res) => res.text())
+    .then((text) => {
+      eval(text);
+      script.gsap = gsap;
+    })
 
+  window.setInterval(() => {
+    const newTargetNode = document.querySelector(`[role='feed']`);
+    if (!newTargetNode || targetNode === newTargetNode) return;
+    observer.disconnect();
+    observer = observe(newTargetNode);
+    block([...newTargetNode.querySelectorAll(`[data-pagelet]`)])
+
+    targetNode = newTargetNode;
+  }, 5000);
 });
