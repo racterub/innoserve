@@ -1,4 +1,6 @@
 window.addEventListener('load', () => {
+  const DEBUG = true;
+
   function hasLabel(elem, labels) {
     return labels.some(tag => elem.querySelector(`[aria-label=${tag}]`));
   }
@@ -35,30 +37,34 @@ window.addEventListener('load', () => {
       btn.onclick = unblock;
       li.appendChild(btn);
 
-      const as = content.querySelectorAll(`[role='link']`);
+      const as = content.querySelectorAll(`[role='link']`); // <a/> s
       const urls = [...as].map(e => e.href);
       const [fbUrl, storeUrl] = [urls[0], urls[3]];
-      console.log({ as, urls, fbUrl, storeUrl });
+      if (DEBUG) console.log({ as, urls, fbUrl, storeUrl });
 
       fetch('https://inno.racterub.me/', {
         body: JSON.stringify({ fbUrl, storeUrl }),
         method: "POST",
         headers: { "Content-Type": "application/json" },
       }).then((response) => {
-        return response.text().then(function (text) {
-          console.log(text);
-          return text ? JSON.parse(text) : { text };
-        })
-      }).then(console.log);
+        return response.text();
+      }).then((text) => {
+        if (DEBUG) console.log(text);
+        if (!text) return;
+        
+        const { status } = JSON.parse(text);
+        if (status) return;
+        unblock();
+      });
     });
   }
 
   // Select the node that will be observed for mutations
   const targetNode = document.querySelector(`[role='feed']`);
+  const parentNode = targetNode.parentNode;
 
   // Options for the observer (which mutations to observe)
-  const config = { childList: true };
-
+  
   // Callback function to execute when mutations are observed
   const callback = function (mutationsList, observer) {
     // Use traditional 'for loops' for IE 11
@@ -68,19 +74,30 @@ window.addEventListener('load', () => {
       }
     }
   };
+  
+  const observe = (targetNode) => {
+    const config = { childList: true };
+    // Create an observer instance linked to the callback function
+    const observer = new MutationObserver(callback);
 
-  // Create an observer instance linked to the callback function
-  const observer = new MutationObserver(callback);
+    // Start observing the target node for configured mutations
+    observer.observe(targetNode, config);
+    return observer;
+  };
 
-  // Start observing the target node for configured mutations
-  observer.observe(targetNode, config);
+  let observer = observe(targetNode);
+  block([...targetNode.querySelectorAll(`[data-pagelet]`)])
 
   const outerObs = new MutationObserver((mutationsList, observer) => {
-    console.log('REFRASH!!', mutationsList);
+    if (mutationsList[0].target !== parentNode) return;
+    
+    if (DEBUG) console.log('REFRASH!!', { mutationsList })
     observer.disconnect();
-    observer.observe(document.querySelector(`[role='feed']`), config);
+    const targetNode = document.querySelector(`[role='feed']`);
+    observer = observe(targetNode);
+    block([...targetNode.querySelectorAll(`[data-pagelet]`)])
+    if (DEBUG) console.log({ targetNode });
   });
-  outerObs.observe(targetNode.parentNode, { childList: true });
+  outerObs.observe(parentNode, { childList: true });
 
-  block([...targetNode.querySelectorAll(`[data-pagelet]`)])
 });
