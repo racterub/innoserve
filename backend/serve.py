@@ -7,13 +7,6 @@
 
 
 '''
-[-] check domain list
-[-] check analytics
-[] check fb profile (username)
-[] check fb profile (creation date)
-'''
-
-'''
 API
 
 Endpoint: /
@@ -41,7 +34,14 @@ from flask_cors import CORS
 from selenium import webdriver
 
 
-# For Demo Purpose
+# Flask Setup
+app = Flask(__name__)
+app.config.from_object("config")
+CORS(app)
+
+
+
+# For Demo Purposes
 GA_LIST = [
     'UA-138308314-1',
 ]
@@ -169,43 +169,25 @@ def checkPost(fburl, url):
     if (not url):
         if (checkFBUser(fburl)):
             return True
-        #if (checkFBCreate(fburl)):
-
-
-            return True
     else:
         if (checkStatic(urlparse(url)) or checkFBUser(fburl)):  # Make it faster
             return True
 
-        #if (checkAnalytics(url) or checkFBCreate(fburl)):
-            #return True
+        if (checkAnalytics(url) or checkFBCreate(fburl)):
+            return True
 
     return False
 
 
-# Flask app
-app = Flask(__name__)
-app.config.from_object("config")
-
-CORS(app)
-"""
-def after_request(resp):
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return resp
-app.after_request(after_request)
-"""
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    print('===')
     if request.method == "GET":
         return "scamblock app"
     else:
 
         payload = request.get_json()
-        print(payload)
         if ('fbUrl' in payload):
             fbUrl = payload['fbUrl']
         else:
